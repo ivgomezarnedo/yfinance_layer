@@ -1,6 +1,6 @@
 # AWS Lambda Python Layer with [`yfinance`](https://github.com/ranaroussi/yfinance)
 
-This repository contains an AWS Lambda Layer that has the [`yfinance`](https://github.com/ranaroussi/yfinance) package, optimized for AWS Lambda use. It allows AWS Lambda functions to utilize  [`yfinance`](https://github.com/ranaroussi/yfinance) without bundling it with the function deployment package.
+This repository contains an AWS Lambda Layer that has the [`yfinance`](https://github.com/ranaroussi/yfinance) package, optimized for AWS Lambda use. It allows AWS Lambda functions to use  [`yfinance`](https://github.com/ranaroussi/yfinance) without bundling it with the function deployment package.
 
 ## Table of Contents
 
@@ -46,27 +46,22 @@ def lambda_handler(event, context):
     return hist.to_dict()
 ```
 
-I understand. Let's adjust the instructions accordingly by referencing the ARN table in the `README.md` and guiding users to update it with new ARNs for other regions:
-
-Got it. Let's refine that section to specify the incompatibility issues with `urllib3` as it relates to `boto3`:
-
-
 ## Layer Contents
 
-This AWS Lambda Layer is meticulously crafted for users looking to exploit the capabilities of the `yfinance` library within the AWS Lambda environment. Here's a detailed insight into the Layer's contents and their significance:
+This AWS Lambda Layer is designed for users aiming to optimize the use of the [`yfinance`](https://github.com/ranaroussi/yfinance) library within the AWS Lambda environment. **Leveraging Lambdas can help distribute requests, providing a more efficient approach to handle rate limits imposed by Yahoo on their Finance API.**
 
-### 1. **YFinance**:
-A robust Python module, `yfinance` facilitates fetching financial data with ease. It permits developers to effortlessly pull stock market and other financial datasets into their applications. This library is paramount for numerous finance-centric applications, especially those operating in serverless environments like AWS Lambda.
+### 1. **[YFinance](https://github.com/ranaroussi/yfinance)**:
+[`yfinance`](https://github.com/ranaroussi/yfinance) facilitates fetching financial data from [Yahoo Finance](https://finance.yahoo.com/) easily and in a Pythoniac way.
 
-### 2. **pysqlite3**:
-The Python environment in AWS Lambda bundles an older version of `sqlite3`. This poses a challenge as `yfinance` capitalizes on window functions, which are unsupported by this legacy version. To circumvent this and fully harness the capabilities of `yfinance`, we've incorporated `pysqlite3` into this Layer. This package provides an updated version of `sqlite3` that aligns seamlessly with the requirements of `yfinance`.
+### 2. **[pysqlite3](https://github.com/pysqlite3/pysqlite3)**:
+The Python environment in AWS Lambda bundles an older version of `sqlite3`. This poses a challenge as [`yfinance`](https://github.com/ranaroussi/yfinance) capitalizes on window functions, which are unsupported by this legacy version. To circumvent this and fully harness the capabilities of [`yfinance`](https://github.com/ranaroussi/yfinance), we've incorporated [pysqlite3](https://github.com/pysqlite3/pysqlite3) into this Layer. This package provides an updated version of `sqlite3` that aligns seamlessly with the requirements of [`yfinance`](https://github.com/ranaroussi/yfinance).
 
-### 3. **Exclusion of urllib3**:
-An observant user might note the absence of `urllib3`, a standard dependency for `yfinance`, in this Layer. The rationale behind this decision is twofold:
+### 3. **Exclusion of [urllib3](https://urllib3.readthedocs.io/en/stable/)**:
+The rationale behind this decision is twofold:
 
-   - `yfinance`'s version of `urllib3` was clashing with the version that `boto3` (which comes bundled by default with Lambda's Python environment) uses. This incompatibility could lead to unforeseen issues during execution.
+   - [`yfinance`](https://github.com/ranaroussi/yfinance)'s version of [`urllib3`](https://urllib3.readthedocs.io/en/stable/) was clashing with the version that `boto3` (which comes bundled by default with Lambda's Python environment) uses. This incompatibility could lead to unforeseen issues during execution.
    
-   - AWS Lambda's Python environment naturally includes its own variant of `urllib3`. By steering clear of incorporating an overlapping and potentially conflicting version, we've chosen to trust Lambda's inherent `urllib3`.
+   - AWS Lambda's Python environment naturally includes its own variant of [`urllib3`](https://urllib3.readthedocs.io/en/stable/). By steering clear of incorporating an overlapping and potentially conflicting version, we've chosen to trust Lambda's inherent [`urllib3`](https://urllib3.readthedocs.io/en/stable/).
 
 ## Deployment
 
@@ -80,7 +75,7 @@ If the provided Layer ARN isn't available in your AWS region, or you want to hav
 
 3. **Log in to AWS Management Console**: Open the AWS Management Console and navigate to the AWS Lambda service.
 
-4. **Create a New Layer**:
+4. **[Create a New Layer](https://docs.aws.amazon.com/lambda/latest/dg/chapter-layers.html)**:
    - Upload the zip file to S3.
    - Copy the S3 path of the uploaded file.
    - Click on "Layers" in the left navigation panel.
@@ -90,7 +85,7 @@ If the provided Layer ARN isn't available in your AWS region, or you want to hav
    - Select the appropriate runtime (Python 3.10).
    - Add a description (optional) and click on "Create".
 
-5. Once the Layer is created, AWS will provide an ARN for the Layer. Note this down as you'll need it to use the Layer in your Lambda functions and possibly to contribute back to this repository.
+5. Once the Layer is created, AWS will provide an ARN for the Layer. Note this down and go to [Quick Start](#quick-start).
 
 ### Contributing the ARN for a New Region:
 
@@ -114,4 +109,4 @@ If you deploy this Layer in a new region and wish to contribute the ARN to help 
 
 5. **Send a Merge Request (MR)**: Go back to the main page of your forked repository on GitHub. Click on "New Pull Request". Ensure the base repository is set to the original repository (not your fork) and the base branch is `main`. Fill out the necessary details and submit the pull request.
 
-Once your MR is reviewed and merged, the new ARN will be available in the main repository's README.md, benefitting all users looking for that specific region.
+Once your MR is reviewed and merged, the new ARN will be available in the main repository's README.md, benefiting all users looking for that specific region.
