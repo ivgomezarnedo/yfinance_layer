@@ -1,6 +1,6 @@
 # AWS Lambda Python Layer with [`yfinance`](https://github.com/ranaroussi/yfinance)
 
-This repository contains an AWS Lambda Layer that has the [`yfinance`](https://github.com/ranaroussi/yfinance) package, optimized for AWS Lambda use. It allows AWS Lambda functions to use  [`yfinance`](https://github.com/ranaroussi/yfinance) without bundling it with the function deployment package.
+This repository contains an [AWS Lambda Layer](https://docs.aws.amazon.com/lambda/latest/dg/chapter-layers.html) that has the [`yfinance`](https://github.com/ranaroussi/yfinance) package (and all it's dependencies), optimized for [AWS Lambda](https://aws.amazon.com/lambda/)  use. It allows [AWS Lambda](https://aws.amazon.com/lambda/) functions (**that use the Python 3.10 runtime**) to use  [`yfinance`](https://github.com/ranaroussi/yfinance) without bundling it with the function deployment package.
 
 ## Table of Contents
 
@@ -13,9 +13,9 @@ This repository contains an AWS Lambda Layer that has the [`yfinance`](https://g
 
 ## Quick Start
 
-To use this layer in your AWS Lambda function:
+To use this layer in your [AWS Lambda](https://aws.amazon.com/lambda/)  function:
 
-1. Navigate to AWS Lambda in the AWS Management Console.
+1. Navigate to [AWS Lambda](https://aws.amazon.com/lambda/)  in the AWS Management Console.
 2. Create or select an existing function.
 3. Under the `Layers` section, choose `Add a Layer`.
 4. Select `Provide a layer version ARN` and input the ARN provided below.
@@ -87,7 +87,7 @@ If the provided Layer ARN isn't available in your AWS region, or you want to hav
 
 5. Once the Layer is created, AWS will provide an ARN for the Layer. Note this down and go to [Quick Start](#quick-start).
 
-### Contributing the ARN for a New Region:
+### Contributing the ARN for a New Region or Python version:
 
 If you deploy this Layer in a new region and wish to contribute the ARN to help others:
 
