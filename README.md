@@ -2,6 +2,7 @@
 
 This repository contains an [AWS Lambda Layer](https://docs.aws.amazon.com/lambda/latest/dg/chapter-layers.html) that has the [`yfinance`](https://github.com/ranaroussi/yfinance) package (and all it's dependencies), optimized for [AWS Lambda](https://aws.amazon.com/lambda/)  use. It allows [AWS Lambda](https://aws.amazon.com/lambda/) functions (**that use the Python 3.10 runtime**) to use  [`yfinance`](https://github.com/ranaroussi/yfinance) without bundling it with the function deployment package.
 
+**yfinance** version: **0.2.36**
 ## Table of Contents
 
 - [Quick Start](#quick-start)

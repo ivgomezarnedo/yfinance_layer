@@ -21,22 +21,16 @@
 
 from __future__ import print_function
 
-import atexit as _atexit
-
 import datetime as _datetime
 import logging
-import os as _os
 import re as _re
-import peewee as _peewee
 import sys as _sys
 import threading
 from functools import lru_cache
 from inspect import getmembers
-from threading import Lock
 from types import FunctionType
-from typing import Dict, Union, List, Optional
+from typing import List, Optional
 
-import appdirs as _ad
 import numpy as _np
 import pandas as _pd
 import pytz as _tz
@@ -46,11 +40,6 @@ from pytz import UnknownTimeZoneError
 
 from yfinance import const
 from .const import _BASE_URL_
-
-try:
-    import ujson as _json
-except ImportError:
-    import json as _json
 
 user_agent_headers = {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
@@ -68,7 +57,7 @@ def attributes(obj):
 
 @lru_cache(maxsize=20)
 def print_once(msg):
-    # 'warnings' module suppression of repeat messages does not work. 
+    # 'warnings' module suppression of repeat messages does not work.
     # This function replicates correct behaviour
     print(msg)
 
@@ -591,8 +580,8 @@ def fix_Yahoo_returning_prepost_unrequested(quotes, interval, tradingPeriods):
 
 
 def fix_Yahoo_returning_live_separate(quotes, interval, tz_exchange):
-    # Yahoo bug fix. If market is open today then Yahoo normally returns 
-    # todays data as a separate row from rest-of week/month interval in above row. 
+    # Yahoo bug fix. If market is open today then Yahoo normally returns
+    # todays data as a separate row from rest-of week/month interval in above row.
     # Seems to depend on what exchange e.g. crypto OK.
     # Fix = merge them together
     n = quotes.shape[0]
@@ -656,7 +645,6 @@ def safe_merge_dfs(df_main, df_sub, interval):
     if df_main.empty:
         return df_main
 
-    df_sub_backup = df_sub.copy()
     data_cols = [c for c in df_sub.columns if c not in df_main]
     if len(data_cols) > 1:
         raise Exception("Expected 1 data col")
@@ -679,11 +667,18 @@ def safe_merge_dfs(df_main, df_sub, interval):
         indices = _np.searchsorted(_np.append(df_main.index, df_main.index[-1] + td), df_sub.index, side='right')
         indices -= 1  # Convert from [[i-1], [i]) to [[i], [i+1])
     # Numpy.searchsorted does not handle out-of-range well, so handle manually:
-    for i in range(len(df_sub.index)):
-        dt = df_sub.index[i]
-        if dt < df_main.index[0] or dt >= df_main.index[-1] + td:
-            # Out-of-range
-            indices[i] = -1
+    if intraday:
+        for i in range(len(df_sub.index)):
+            dt = df_sub.index[i].date()
+            if dt < df_main.index[0].date() or dt >= df_main.index[-1].date() + _datetime.timedelta(days=1):
+                # Out-of-range
+                indices[i] = -1
+    else:
+        for i in range(len(df_sub.index)):
+            dt = df_sub.index[i]
+            if dt < df_main.index[0] or dt >= df_main.index[-1] + td:
+                # Out-of-range
+                indices[i] = -1
 
     f_outOfRange = indices == -1
     if f_outOfRange.any():
@@ -694,7 +689,7 @@ def safe_merge_dfs(df_main, df_sub, interval):
                 df_main['Dividends'] = 0.0
                 return df_main
         else:
-            empty_row_data = {c:[_np.nan] for c in const.price_colnames}|{'Volume':[0]}
+            empty_row_data = {**{c:[_np.nan] for c in const.price_colnames}, 'Volume':[0]}
             if interval == '1d':
                 # For 1d, add all out-of-range event dates
                 for i in _np.where(f_outOfRange)[0]:
@@ -703,7 +698,7 @@ def safe_merge_dfs(df_main, df_sub, interval):
                     empty_row = _pd.DataFrame(data=empty_row_data, index=[dt])
                     df_main = _pd.concat([df_main, empty_row], sort=True)
             else:
-                # Else, only add out-of-range event dates if occurring in interval 
+                # Else, only add out-of-range event dates if occurring in interval
                 # immediately after last price row
                 last_dt = df_main.index[-1]
                 next_interval_start_dt = last_dt + td
@@ -711,7 +706,6 @@ def safe_merge_dfs(df_main, df_sub, interval):
                 for i in _np.where(f_outOfRange)[0]:
                     dt = df_sub.index[i]
                     if next_interval_start_dt <= dt < next_interval_end_dt:
-                        new_dt = next_interval_start_dt
                         get_yf_logger().debug(f"Adding out-of-range {data_col} @ {dt.date()} in new prices row of NaNs")
                         empty_row = _pd.DataFrame(data=empty_row_data, index=[dt])
                         df_main = _pd.concat([df_main, empty_row], sort=True)
@@ -771,9 +765,9 @@ def safe_merge_dfs(df_main, df_sub, interval):
 
 def fix_Yahoo_dst_issue(df, interval):
     if interval in ["1d", "1w", "1wk"]:
-        # These intervals should start at time 00:00. But for some combinations of date and timezone, 
+        # These intervals should start at time 00:00. But for some combinations of date and timezone,
         # Yahoo has time off by few hours (e.g. Brazil 23:00 around Jan-2022). Suspect DST problem.
-        # The clue is (a) minutes=0 and (b) hour near 0. 
+        # The clue is (a) minutes=0 and (b) hour near 0.
         # Obviously Yahoo meant 00:00, so ensure this doesn't affect date conversion:
         f_pre_midnight = (df.index.minute == 0) & (df.index.hour.isin([22, 23]))
         dst_error_hours = _np.array([0] * df.shape[0])
@@ -864,9 +858,9 @@ class ProgressBar:
         if self.elapsed > self.iterations:
             self.elapsed = self.iterations
         self.update_iteration(1)
-        print('\r' + str(self), end='')
-        _sys.stdout.flush()
-        print()
+        print('\r' + str(self), end='', file=_sys.stderr)
+        _sys.stderr.flush()
+        print("", file=_sys.stderr)
 
     def animate(self, iteration=None):
         if iteration is None:
@@ -875,8 +869,8 @@ class ProgressBar:
         else:
             self.elapsed += iteration
 
-        print('\r' + str(self), end='')
-        _sys.stdout.flush()
+        print('\r' + str(self), end='', file=_sys.stderr)
+        _sys.stderr.flush()
         self.update_iteration()
 
     def update_iteration(self, val=None):
@@ -896,156 +890,3 @@ class ProgressBar:
     def __str__(self):
         return str(self.prog_bar)
 
-
-# ---------------------------------
-# TimeZone cache related code
-# ---------------------------------
-
-
-_cache_init_lock = Lock()
-
-
-class _TzCacheException(Exception):
-    pass
-
-
-class _TzCacheDummy:
-    """Dummy cache to use if tz cache is disabled"""
-
-    def lookup(self, tkr):
-        return None
-
-    def store(self, tkr, tz):
-        pass
-
-    @property
-    def tz_db(self):
-        return None
-
-
-class _TzCacheManager:
-    _tz_cache = None
-
-    @classmethod
-    def get_tz(cls):
-        if cls._tz_cache is None:
-            cls._initialise()
-        return cls._tz_cache
-
-    @classmethod
-    def _initialise(cls, cache_dir=None):
-        try:
-            cls._tz_cache = _TzCache()
-        except _TzCacheException as err:
-            get_yf_logger().info(f"Failed to create TzCache, reason: {err}. "
-                                 "TzCache will not be used. "
-                                 "Tip: You can direct cache to use a different location with 'set_tz_cache_location(mylocation)'")
-            cls._tz_cache = _TzCacheDummy()
-
-
-class _DBManager:
-    _db = None
-    _cache_dir = _os.path.join(_ad.user_cache_dir(), "py-yfinance")
-
-    @classmethod
-    def get_database(cls):
-        if cls._db is None:
-            cls._initialise()
-        return cls._db
-
-    @classmethod
-    def close_db(cls):
-        if cls._db is not None:
-            try:
-                cls._db.close()
-            except Exception as e:
-                # Must discard exceptions because Python trying to quit.
-                pass
-
-
-    @classmethod
-    def _initialise(cls, cache_dir=None):
-        if cache_dir is not None:
-            cls._cache_dir = cache_dir
-
-        if not _os.path.isdir(cls._cache_dir):
-            _os.mkdir(cls._cache_dir)
-        cls._db = _peewee.SqliteDatabase(
-            _os.path.join(cls._cache_dir, 'tkr-tz.db'),
-            pragmas={'journal_mode': 'wal', 'cache_size': -64}
-        )
-
-        old_cache_file_path = _os.path.join(cls._cache_dir, "tkr-tz.csv")
-        if _os.path.isfile(old_cache_file_path):
-            _os.remove(old_cache_file_path)
-
-    @classmethod
-    def change_location(cls, new_cache_dir):
-        cls._db.close()
-        cls._db = None
-        cls._cache_dir = new_cache_dir
-# close DB when Python exists
-_atexit.register(_DBManager.close_db)
-
-
-class _KV(_peewee.Model):
-    key = _peewee.CharField(primary_key=True)
-    value = _peewee.CharField(null=True)
-    
-    class Meta:
-        database = _DBManager.get_database()
-        without_rowid = True
-
-
-class _TzCache:
-    def __init__(self):
-        db = _DBManager.get_database()
-        db.connect()
-        db.create_tables([_KV])
-
-
-    def lookup(self, key):
-        try:
-            return _KV.get(_KV.key == key).value
-        except _KV.DoesNotExist:
-            return None
-
-    def store(self, key, value):
-        db = _DBManager.get_database()
-        try:
-            if value is None:
-                q = _KV.delete().where(_KV.key == key)
-                q.execute()
-                return
-            with db.atomic():
-                _KV.insert(key=key, value=value).execute()
-        except _peewee.IntegrityError:
-            # Integrity error means the key already exists. Try updating the key.
-            old_value = self.lookup(key)
-            if old_value != value:
-                get_yf_logger().debug(f"Value for key {key} changed from {old_value} to {value}.")
-                with db.atomic():
-                    q = _KV.update(value=value).where(_KV.key == key)
-                    q.execute()
-
-
-def get_tz_cache():
-    """
-    Get the timezone cache, initializes it and creates cache folder if needed on first call.
-    If folder cannot be created for some reason it will fall back to initialize a
-    dummy cache with same interface as real cash.
-    """
-    # as this can be called from multiple threads, protect it.
-    with _cache_init_lock:
-        return _TzCacheManager.get_tz()
-
-
-def set_tz_cache_location(cache_dir: str):
-    """
-    Sets the path to create the "py-yfinance" cache folder in.
-    Useful if the default folder returned by "appdir.user_cache_dir()" is not writable.
-    Must be called before cache is used (that is, before fetching tickers).
-    :param cache_dir: Path to use for caches
-    :return: None
-    """
-    _DBManager.change_location(cache_dir)
