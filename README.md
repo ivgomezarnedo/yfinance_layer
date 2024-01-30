@@ -28,7 +28,7 @@ The ARN for the layer is:
 
 | Region    | ARN |
 |-----------| --- |
-| us-west-2 | ```arn:aws:lambda:us-west-2:100957474272:layer:yfinance_layer:5``` |
+| us-west-2 | ```arn:aws:lambda:us-west-2:100957474272:layer:yfinance_layer:7``` |
 
 
 **See [Deployment](#deployment) section with the details on how to deploy it in another region**
